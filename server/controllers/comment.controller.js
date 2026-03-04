@@ -1,7 +1,16 @@
 const { pool } = require("../config/db");
+const { getByArticleSchema } = require("../validators/comment.validator");
 
 exports.getCommentsByArticle = async (req, res) => {
   try {
+    const { success, data, error } = getByArticleSchema.safeParse(req.params);
+
+    if (!success) {
+      return res.status(400).json(error);
+    }
+
+    const { articleId } = data;
+
     const [rows] = await pool.query(
       `
       SELECT comments.*, users.username, users.avatar
@@ -10,12 +19,13 @@ exports.getCommentsByArticle = async (req, res) => {
       WHERE comments.article_id = ?
       ORDER BY comments.created_at DESC
       `,
-      [req.params.articleId],
+      [articleId],
     );
 
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -36,7 +46,8 @@ exports.createComment = async (req, res) => {
 
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -58,6 +69,7 @@ exports.deleteComment = async (req, res) => {
 
     res.json({ message: "Comment deleted successfully" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
