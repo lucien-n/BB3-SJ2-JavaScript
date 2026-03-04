@@ -24,7 +24,7 @@ exports.createComment = async (req, res) => {
     const { content } = req.body;
 
     if (!content?.trim())
-      return res.status(400).json({ message: "Content is required" });
+      return res.status(422).json({ message: "Content is required" });
 
     const [result] = await pool.query(
       `
@@ -34,17 +34,7 @@ exports.createComment = async (req, res) => {
       [content, req.params.articleId, req.userId],
     );
 
-    const [rows] = await pool.query(
-      `
-      SELECT comments.*, users.username, users.avatar
-      FROM comments
-      JOIN users ON comments.user_id = users.id
-      WHERE comments.id = ?
-      `,
-      [result.insertId],
-    );
-
-    res.status(201).json(rows[0]);
+    res.status(201).json({ id: result.insertId });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
