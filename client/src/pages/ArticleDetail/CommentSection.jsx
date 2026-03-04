@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import SingleComment from "./SingleComment";
 
 /**
  * @typedef {Object} Props
@@ -10,9 +11,10 @@ import { useAuth } from "../../context/AuthContext";
 /** @param {Props} props */
 const CommentsSection = ({ articleId }) => {
   const { user } = useAuth();
+  /** @type {[import("../../types").Comment[], React.Dispatch<React.SetStateAction<import("../../types").Comment[]>>]} */
   const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [newCommentContent, setNewCommentContent] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -22,23 +24,36 @@ const CommentsSection = ({ articleId }) => {
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchComments();
   }, [articleId]);
 
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
+  /** @param {SubmitEvent} ev */
+  const handleAddComment = async (ev) => {
+    ev.preventDefault();
+    if (!newCommentContent.trim()) return;
 
     try {
       const { data } = await API.post(`/articles/${articleId}/comments`, {
-        content: newComment,
+        content: newCommentContent,
       });
       setComments((prev) => [data, ...prev]);
-      setNewComment("");
+      setNewCommentContent("");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /** @param {string} commentId */
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Supprimer ce commentaire ?")) return;
+
+    try {
+      await API.delete(`/articles/comments/${commentId}`);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
     } catch (err) {
       console.error(err);
     }
@@ -51,8 +66,8 @@ const CommentsSection = ({ articleId }) => {
       {user && (
         <form onSubmit={handleAddComment} style={{ marginBottom: "30px" }}>
           <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            value={newCommentContent}
+            onChange={(e) => setNewCommentContent(e.target.value)}
             placeholder="Écrire un commentaire..."
             rows={4}
             style={{
@@ -70,33 +85,17 @@ const CommentsSection = ({ articleId }) => {
         </form>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <div>Chargement des commentaires...</div>
       ) : comments.length === 0 ? (
         <div>Aucun commentaire pour le moment.</div>
       ) : (
         comments.map((comment) => (
-          <div
+          <SingleComment
             key={comment.id}
-            style={{
-              padding: "15px 0",
-              borderBottom: "1px solid var(--border)",
-            }}
-          >
-            <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
-              {comment.username}
-            </div>
-            <div
-              style={{
-                fontSize: "0.9rem",
-                color: "var(--text-muted)",
-                marginBottom: "8px",
-              }}
-            >
-              {new Date(comment.created_at).toLocaleDateString()}
-            </div>
-            <div style={{ whiteSpace: "pre-wrap" }}>{comment.content}</div>
-          </div>
+            comment={comment}
+            onDelete={() => handleDeleteComment(comment.id)}
+          />
         ))
       )}
     </section>

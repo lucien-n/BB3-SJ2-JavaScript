@@ -14,6 +14,14 @@ export interface User {
   id: number;
 }
 
+export interface Comment {
+  id: number;
+  content: string;
+  article_id: number;
+  user_id: number;
+  created_at: string;
+}
+
 export interface AuthContext {
   user: User;
 }

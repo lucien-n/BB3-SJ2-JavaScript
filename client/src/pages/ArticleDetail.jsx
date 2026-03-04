@@ -10,7 +10,7 @@ const ArticleDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  /** @type {[import("../types").Article, (prev: import("../types").Article) => import("../types").Article]} */
+  /** @type {[import("../types").Article, React.Dispatch<React.SetStateAction<import("../types").Article>>]} */
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
 
