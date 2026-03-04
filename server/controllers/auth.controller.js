@@ -1,29 +1,23 @@
 const { pool } = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { registerSchema, loginSchema } = require("../validators/auth.validator");
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DUMMY_HASH = "$2a$10$abcdefghijklmnopqrstuvwxyzabcdefghi";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error("JWT_SECRET not configured");
 
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * */
 exports.register = async (req, res) => {
   try {
-    const { password } = req.body;
-    const username = req.body.username?.trim();
-    const email = req.body.email?.trim();
+    const { data, success, error } = registerSchema.safeParse(req.body);
+    if (!success) return res.status(422).json(error);
 
-    if (!username || !email || !password)
-      return res.status(400).json({ message: "All fields are required" });
-
-    if (!EMAIL_REGEX.test(email))
-      return res.status(400).json({ message: "Invalid email format" });
-
-    if (password.length < 6)
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 6 characters" });
+    const { username, email, password } = data;
 
     const [existing] = await pool.query(
       "SELECT id FROM users WHERE email = ?",
@@ -54,12 +48,16 @@ exports.register = async (req, res) => {
   }
 };
 
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * */
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { data, success, error } = loginSchema.safeParse(req.body);
+    if (!success) return res.status(422).json(error);
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
+    const { email, password } = data;
 
     const [rows] = await pool.query(
       "SELECT id, username, email, password, avatar FROM users WHERE email = ?",
