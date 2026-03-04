@@ -10,7 +10,7 @@ import { useAuth } from "../../context/AuthContext";
 const SingleComment = ({ comment, onDelete }) => {
   const { user } = useAuth();
 
-  const isOwner = user.id === comment.user_id;
+  const isOwner = user?.id === comment.user_id;
 
   return (
     <div
