@@ -1,6 +1,7 @@
 const { pool } = require("../config/db");
 const {
-  articleIdParamSchema: getByArticleSchema,
+  articleIdParamSchema,
+  commentIdParamSchema,
   createCommentSchema,
 } = require("../validators/comment.validator");
 
@@ -9,11 +10,23 @@ const {
  * @returns {number}
  */
 function parseArticleId(req) {
-  const { success, error } = getByArticleSchema.safeParse(req.params);
+  const { success, error, data } = articleIdParamSchema.safeParse(req.params);
   if (!success) throw error;
 
   const { articleId } = data;
   return articleId;
+}
+
+/**
+ * @param {import("express").Request} req
+ * @returns {number}
+ */
+function parseCommentId(req) {
+  const { success, error, data } = commentIdParamSchema.safeParse(req.params);
+  if (!success) throw error;
+
+  const { commentId } = data;
+  return commentId;
 }
 
 /**
@@ -50,7 +63,7 @@ exports.createComment = async (req, res) => {
   try {
     const articleId = parseArticleId(req);
 
-    const { success, data, error } = createCommentSchema.safeParse(req.params);
+    const { success, data, error } = createCommentSchema.safeParse(req.body);
     if (!success) return res.status(400).json(error);
 
     const { content } = data;
@@ -63,10 +76,20 @@ exports.createComment = async (req, res) => {
       INSERT INTO comments (content, article_id, user_id)
       VALUES (?, ?, ?)
       `,
-      [content, articleId, req.userId],
+      [content, req.params.articleId, req.userId],
     );
 
-    res.status(201).json({ id: result.insertId });
+    const [rows] = await pool.query(
+      `
+      SELECT comments.*, users.username, users.avatar
+      FROM comments
+      JOIN users ON comments.user_id = users.id
+      WHERE comments.id = ?
+      `,
+      [result.insertId],
+    );
+
+    res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -79,8 +102,10 @@ exports.createComment = async (req, res) => {
  * */
 exports.deleteComment = async (req, res) => {
   try {
+    const commentId = parseCommentId(req);
+
     const [comments] = await pool.query("SELECT * FROM comments WHERE id = ?", [
-      req.params.commentId,
+      commentId,
     ]);
 
     if (comments.length === 0)
@@ -89,9 +114,7 @@ exports.deleteComment = async (req, res) => {
     if (comments[0].user_id !== req.userId)
       return res.status(403).json({ message: "Not authorized" });
 
-    await pool.query("DELETE FROM comments WHERE id = ?", [
-      req.params.commentId,
-    ]);
+    await pool.query("DELETE FROM comments WHERE id = ?", [commentId]);
 
     res.json({ message: "Comment deleted successfully" });
   } catch (err) {
