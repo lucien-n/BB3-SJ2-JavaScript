@@ -63,7 +63,7 @@ exports.updateArticle = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
 
     const image = req.file
-      ? `/ uploads / ${req.file.filename}`
+      ? `/uploads/${req.file.filename}`
       : articles[0].image;
 
     await pool.query(

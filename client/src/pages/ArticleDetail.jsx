@@ -39,6 +39,7 @@ const ArticleDetail = () => {
 
   if (loading) return <div>Chargement...</div>;
   if (!article) return <div>Article introuvable.</div>;
+  console.log(article?.image && article.image);
 
   const isOwner = user && user.id === article.user_id;
 
