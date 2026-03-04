@@ -9,6 +9,7 @@ const ArticleDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  /** @type {[import("../types").Article, (prev: import("../types").Article) => import("../types").Article]} */
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +41,7 @@ const ArticleDetail = () => {
   if (loading) return <div>Chargement...</div>;
   if (!article) return <div>Article introuvable.</div>;
 
-  const isOwner = user && user.id === article.user_id;
+  const isOwner = user?.id === article.user_id;
 
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto" }}>
