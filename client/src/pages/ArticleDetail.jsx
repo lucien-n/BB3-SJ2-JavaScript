@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import API from "../api/axios";
 import { BACKEND_URL } from "../constants";
 import { useAuth } from "../context/AuthContext";
+import CommentsSection from "./ArticleDetail/CommentSection";
 
 const ArticleDetail = () => {
   const { id } = useParams();
@@ -149,6 +150,8 @@ const ArticleDetail = () => {
           {article.content}
         </div>
       </article>
+
+      <CommentsSection articleId={id} />
     </div>
   );
 };
