@@ -1,6 +1,6 @@
 const z = require("zod").default;
 
-exports.getByArticleSchema = z.object({
+exports.articleIdParamSchema = z.object({
   articleId: z.coerce.number().int().positive(),
 });
 

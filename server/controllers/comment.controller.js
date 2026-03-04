@@ -1,15 +1,28 @@
 const { pool } = require("../config/db");
-const { getByArticleSchema } = require("../validators/comment.validator");
+const {
+  articleIdParamSchema: getByArticleSchema,
+  createCommentSchema,
+} = require("../validators/comment.validator");
 
+/**
+ * @param {import("express").Request} req
+ * @returns {number}
+ */
+function parseArticleId(req) {
+  const { success, error } = getByArticleSchema.safeParse(req.params);
+  if (!success) throw error;
+
+  const { articleId } = data;
+  return articleId;
+}
+
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * */
 exports.getCommentsByArticle = async (req, res) => {
   try {
-    const { success, data, error } = getByArticleSchema.safeParse(req.params);
-
-    if (!success) {
-      return res.status(400).json(error);
-    }
-
-    const { articleId } = data;
+    const articleId = parseArticleId(req);
 
     const [rows] = await pool.query(
       `
@@ -29,9 +42,18 @@ exports.getCommentsByArticle = async (req, res) => {
   }
 };
 
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * */
 exports.createComment = async (req, res) => {
   try {
-    const { content } = req.body;
+    const articleId = parseArticleId(req);
+
+    const { success, data, error } = createCommentSchema.safeParse(req.params);
+    if (!success) return res.status(400).json(error);
+
+    const { content } = data;
 
     if (!content?.trim())
       return res.status(422).json({ message: "Content is required" });
@@ -41,7 +63,7 @@ exports.createComment = async (req, res) => {
       INSERT INTO comments (content, article_id, user_id)
       VALUES (?, ?, ?)
       `,
-      [content, req.params.articleId, req.userId],
+      [content, articleId, req.userId],
     );
 
     res.status(201).json({ id: result.insertId });
@@ -51,6 +73,10 @@ exports.createComment = async (req, res) => {
   }
 };
 
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * */
 exports.deleteComment = async (req, res) => {
   try {
     const [comments] = await pool.query("SELECT * FROM comments WHERE id = ?", [
